@@ -3,8 +3,11 @@ package main
 import (
 	"fmt"
 	"math/rand"
+	"os"
 
 	rl "github.com/gen2brain/raylib-go/raylib"
+	"github.com/lafriks/go-tiled"
+	"github.com/lafriks/go-tiled/render"
 )
 
 const (
@@ -50,7 +53,6 @@ func (p *Player) Move() {
 	if rl.IsKeyDown(rl.KeyA) && p.Position.X > 0 {
 		p.Position.X -= float32(p.Speed)
 	}
-
 	if rl.IsKeyDown(rl.KeyD) && p.Position.X < float32(rl.GetScreenWidth()-int(p.Texture.Width)) {
 		p.Position.X += float32(p.Speed)
 	}
@@ -168,10 +170,34 @@ func main() {
 	rl.SetWindowState(rl.FlagBorderlessWindowedMode) // Menghapus border window
 
 	screenWidth := rl.GetScreenWidth()   // Get current screen width
-	screenHeight := rl.GetScreenHeight() // Get current screen height
-
+	screenHeight := rl.GetScreenHeight() // Get current screen heigh
 	rl.SetWindowSize(screenWidth, screenHeight)
 	rl.MaximizeWindow() // Maximazed Window
+
+	// Tile tile file
+	tmxTileFile := "coba.tmx"
+
+	// Load tmx
+	gameMap, errMap := tiled.LoadFile(tmxTileFile)
+	if errMap != nil {
+		fmt.Printf("Error parsing tmx file %s", errMap.Error())
+		os.Exit(2)
+	}
+
+	renderer, errRender := render.NewRenderer(gameMap)
+	if errRender != nil {
+		fmt.Printf("Error rendering map: %s", errRender.Error())
+		os.Exit(2)
+	}
+
+	errRenderLayer := renderer.RenderLayer(0)
+	if errRenderLayer != nil {
+		fmt.Printf("Error to rendering layer 0 %s", errRenderLayer.Error())
+		os.Exit(2)
+	}
+
+	mapImage := renderer.Result
+	defer renderer.Clear()
 
 	rl.InitAudioDevice()
 	defer rl.CloseAudioDevice()
@@ -191,6 +217,9 @@ func main() {
 	rl.ImageResize(robotImage, 100, 100)
 
 	// Convert image to texture
+	mapTexture := rl.LoadTextureFromImage(mapImage)
+	defer rl.UnloadTexture(mapTexture)
+
 	catTexture := rl.LoadTextureFromImage(catImage)
 	defer rl.UnloadTexture(catTexture)
 
